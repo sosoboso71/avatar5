@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8">
@@ -93,7 +93,7 @@ let floatingUsers = new Set();
 let activeUsers = new Map();
 let profileCache = {};
 
-const ACTIVE_TIMEOUT = 300000; // 🔥 5 minute
+const ACTIVE_TIMEOUT = 300000; // 5 minute
 
 function markActivity(uid) {
     activeUsers.set(uid, Date.now());
@@ -146,6 +146,9 @@ function spawnFloatingAvatar(url, uid) {
 
     if (floatingUsers.has(uid)) return;
 
+    // limităm numărul de avatare pentru CPU
+    if (objects.length > 25) return;
+
     floatingUsers.add(uid);
 
     loadProfile(url, (img) => {
@@ -174,12 +177,13 @@ function drawCircleImage(ctx, o) {
 
     ctx.globalAlpha = fade;
 
-    const glow = 10 + Math.sin(Date.now() / 200) * 6;
+    // glow mai ușor pentru CPU
+    const glow = 6 + Math.sin(Date.now() / 400) * 3;
 
     ctx.beginPath();
     ctx.arc(x, y, size/2 + glow, 0, Math.PI * 2);
     ctx.strokeStyle = neon;
-    ctx.lineWidth = 14;   // 🔥 contur gros neon
+    ctx.lineWidth = 10;   // contur gros, dar mai ușor pentru CPU
     ctx.stroke();
 
     ctx.beginPath();
@@ -190,7 +194,7 @@ function drawCircleImage(ctx, o) {
     ctx.restore();
 }
 
-/* RESPINGERE */
+/* RESPINGERE (raza mai mică pentru mai puține calcule) */
 function repelAvatars() {
     for (let i = 0; i < objects.length; i++) {
         for (let j = i + 1; j < objects.length; j++) {
@@ -201,9 +205,9 @@ function repelAvatars() {
             const dy = b.y - a.y;
             const dist = Math.sqrt(dx*dx + dy*dy);
 
-            if (dist < 260) {
+            if (dist < 180) { // era 260
                 const angle = Math.atan2(dy, dx);
-                const force = 2.2;
+                const force = 2.0;
 
                 a.vx -= Math.cos(angle) * force;
                 a.vy -= Math.sin(angle) * force;
@@ -225,9 +229,9 @@ function fixEdges(o) {
     if (o.y > 1920 - r) { o.y = 1920 - r; o.vy *= -1; }
 }
 
-/* LOOP FPS 30 */
+/* LOOP FPS 24 (mai „cinematic”, mai puțin CPU) */
 let lastFrame = 0;
-const fpsInterval = 1000 / 30;
+const fpsInterval = 1000 / 24;
 
 function loop(ts) {
     if (ts - lastFrame < fpsInterval) {
